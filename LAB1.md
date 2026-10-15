@@ -1,4 +1,4 @@
-# 实验 1 记录：第 <组号> 组
+# 实验 1 记录：第 3 组
 
 现场检查时将打开本文件，按其中的链接核对。证据一律以链接或文本形式给出，不要只贴截图。将 `<填写>` 替换为本组的内容。main 受保护之后，修改本文件也须通过 PR。
 
@@ -6,27 +6,38 @@
 
 | 项 | 内容 |
 |---|---|
-| 小组 | 第 <组号> 组 |
-| 仓库地址 | <https://github.com/…> |
-| 代码载体 | 统一示例 / 自己的项目（<项目名与语言>） |
-| runner 与语言版本 | `ubuntu-24.04`，<Go 或其他语言的版本> |
-| 合并方式 | <squash / merge commit / rebase> |
+| 小组 | 第 3 组 |
+| 仓库地址 | <https://github.com/steinerkuri/ops-lab1-3> |
+| 代码载体 | 统一示例 |
+| runner 与语言版本 | `ubuntu-24.04`，Go `1.26.9` |
+| 合并方式 | squash |
 
 ## 2. 任务 0：本地基线
 
 | 问题 | 观察结果 |
 |---|---|
-| 第一次 `make package` 得到的 BUILD_INFO（粘贴） | <填写> |
-| 修改一行、不提交，再次打包：BUILD_INFO 是否变化？二进制文件的 sha256 是否变化？（贴出两次的 sha256） | <填写> |
-| 两次 `go version -m` 输出中的 vcs 行有何不同？ | <填写> |
-| 仅凭 BUILD_INFO，能否回答该包是什么、在哪台机器上、何时、用哪份代码构建？哪一项信息会出错？ | <填写> |
+| 第一次 `make package` 得到的 BUILD_INFO（粘贴） | 见下方“第一次构建的 BUILD_INFO”。 |
+| 修改一行、不提交，再次打包：BUILD_INFO 是否变化？二进制文件的 sha256 是否变化？（贴出两次的 sha256） | BUILD_INFO 没有变化；二进制文件的 sha256 发生变化。第一次：`f23447d406c42af7dd35e23c2d1b2f15484cfb709cc9b4bb1262643694b8528e`；第二次：`1d14f317067f0345b881d1eb5a31c47e09654a858c638319871df4359afc2060`。 |
+| 两次 `go version -m` 输出中的 vcs 行有何不同？ | 两次的 `vcs.revision` 和 `vcs.time` 相同；第一次为 `vcs.modified=false`，修改但未提交后，第二次变为 `vcs.modified=true`。 |
+| 仅凭 BUILD_INFO，能否回答该包是什么、在哪台机器上、何时、用哪份代码构建？哪一项信息会出错？ | 可以根据 `name`、`version` 和 `build_no` 判断该包是什么，但 BUILD_INFO 没有记录构建机器和构建时间。`commit` 只能表示当时的 HEAD 提交，无法记录未提交的工作区修改。因此存在未提交修改时，BUILD_INFO 会让人误以为制品完全来自该 `commit`，不能准确回答使用了哪份代码构建。 |
+
+### 第一次构建的 BUILD_INFO
+
+```text
+name=enroll-conflict
+version=1.0.0
+build_no=1
+run_id=local
+commit=7b63b41c13f061439997b0e6e4eaa2af922a7aa1
+go=go1.26.9
+```
 
 ## 3. 证据
 
 | 项 | 链接或文本 |
 |---|---|
-| 规则集里启用的规则 | <列出规则名、审批人数和必需检查的名称> |
-| 组长直接 `git push origin main` 被拒的终端输出 | <粘贴文本> |
+| 规则集里启用的规则 | 规则名：Require a pull request before merging、Require status checks to pass、Restrict deletions、Block force pushes；审批人数：1；必需检查名称：`ci`。 |
+| 组长直接 `git push origin main` 被拒的终端输出 | 见下方“直接推送被拒的终端输出”. |
 | 第一轮：失败的 PR 运行 | <链接> |
 | 第一轮：修复后通过的 PR 运行 | <链接> |
 | 第一轮：合入 main 后的运行（含制品） | <链接> |
@@ -37,6 +48,26 @@
 | 未合入分支上的 tag 被 release gate 拒绝的运行 | <链接> |
 | Release v1.0.0 | <链接> |
 | Release v1.0.1 | <链接> |
+
+### 直接推送被拒的终端输出
+
+```text
+(base) PS D:\labs_projects\Fall2026\OPS\lab1\ops-lab1-3> git push origin main
+Enumerating objects: 1, done.
+Counting objects: 100% (1/1), done.
+Writing objects: 100% (1/1), 279 bytes | 279.00 KiB/s, done.
+Total 1 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: Review all repository rules at https://github.com/steinerkuri/ops-lab1-3/rules?ref=refs%2Fheads%2Fmain
+remote:
+remote: - Changes must be made through a pull request.
+remote:
+remote: - Required status check "ci" is expected.
+remote:
+To https://github.com/steinerkuri/ops-lab1-3.git
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/steinerkuri/ops-lab1-3.git'
+```
 
 ## 4. 追溯与运行
 
@@ -100,6 +131,7 @@
 
 | 运行 | 事件（PR / push） | 时长 | 备注 |
 |---|---|---|---|
+| [ci #1](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38708020682) | push | 39 秒 | `run_id=38708020682`，首次主干 CI，成功生成 artifact |
 | #<编号> | <填写> | <填写> | <填写> |
 
 ## 6. 分析问题
