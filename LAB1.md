@@ -38,8 +38,8 @@ go=go1.26.9
 |---|---|
 | 规则集里启用的规则 | 规则名：Require a pull request before merging、Require status checks to pass、Restrict deletions、Block force pushes；审批人数：1；必需检查名称：`ci`。 |
 | 组长直接 `git push origin main` 被拒的终端输出 | 见下方“直接推送被拒的终端输出”. |
-| 第一轮：失败的 PR 运行 | <链接> |
-| 第一轮：修复后通过的 PR 运行 | <链接> |
+| 第一轮：失败的 PR 运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38848100553>  |
+| 第一轮：修复后通过的 PR 运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38851149470> |
 | 第一轮：合入 main 后的运行（含制品） | <链接> |
 | 第二轮：找到的缺陷，以及现有测试为何无法发现它 | <一两句话> |
 | 第二轮：仅含缺陷时仍然通过的运行 | <链接> |
@@ -113,10 +113,10 @@ error: failed to push some refs to 'https://github.com/steinerkuri/ops-lab1-3.gi
 
 | 事件 | 时间 | 链接 |
 |---|---|---|
-| 发起 PR | <填写> | <PR 链接> |
-| 第一次 `ci` 失败（运行结束） | <填写> | <链接> |
-| 推送修复提交 | <填写> | <链接> |
-| `ci` 通过（运行结束） | <填写> | <链接> |
+| 发起 PR | 2026-10-16 11:57:19 | <https://github.com/steinerkuri/ops-lab1-3/pull/2> |
+| 第一次 `ci` 失败（运行结束） | 2026-10-16 11:57:38 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38848100553> |
+| 推送修复提交 | <2026-10-16 12:32:01> | <https://github.com/steinerkuri/ops-lab1-3/commit/c946bbd4577ca762bf82e778c5d9af304be21885> |
+| `ci` 通过（运行结束） | <2026-10-16 12:32:48> | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38851149470> |
 | 合入 main | <填写> | <链接> |
 
 提交到发布的间隔，至少记录三个合入的 PR：

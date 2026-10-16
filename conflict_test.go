@@ -51,3 +51,10 @@ func TestValid(t *testing.T) {
 		}
 	}
 }
+
+func TestValidMonday(t *testing.T) {
+	monday := Section{Weekday: 1, Start: 1, End: 2, Weeks: AllWeeks}
+	if !monday.Valid() {
+		t.Fatalf("%+v 应当合法", monday)
+	}
+}
