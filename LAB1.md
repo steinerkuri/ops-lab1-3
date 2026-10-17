@@ -37,14 +37,14 @@ go=go1.26.9
 | 项 | 链接或文本 |
 |---|---|
 | 规则集里启用的规则 | 规则名：Require a pull request before merging、Require status checks to pass、Restrict deletions、Block force pushes；审批人数：1；必需检查名称：`ci`。 |
-| 组长直接 `git push origin main` 被拒的终端输出 | 见下方“直接推送被拒的终端输出”. |
-| 第一轮：失败的 PR 运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38848100553>  |
+| 组长直接 `git push origin main` 被拒的终端输出 | 见下方“直接推送被拒的终端输出”。 |
+| 第一轮：失败的 PR 运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38848100553> |
 | 第一轮：修复后通过的 PR 运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38851149470> |
-| 第一轮：合入 main 后的运行（含制品） | <链接> |
-| 第二轮：找到的缺陷，以及现有测试为何无法发现它 | <一两句话> |
-| 第二轮：仅含缺陷时仍然通过的运行 | <链接> |
-| 第二轮：补测试后失败的运行 | <链接> |
-| 第二轮：撤销缺陷后通过的运行 | <链接> |
+| 第一轮：合入 main 后的运行（含制品） | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38927338456> |
+| 第二轮：找到的缺陷，以及现有测试为何无法发现它 | `weeksOverlap` 的周次交集判断漏掉了“双周对双周”：现有用例只覆盖单周对每周、双周对每周和单周对单周，把判断改成只认单周对单周后，双周班之间同一时段会被判为不冲突，`make test` 仍然全部通过。 |
+| 第二轮：仅含缺陷时仍然通过的运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38996089401> |
+| 第二轮：补测试后失败的运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38996208812> |
+| 第二轮：撤销缺陷后通过的运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38996316866> |
 | 未合入分支上的 tag 被 release gate 拒绝的运行 | <链接> |
 | Release v1.0.0 | <链接> |
 | Release v1.0.1 | <链接> |
