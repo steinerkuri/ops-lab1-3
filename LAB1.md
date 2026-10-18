@@ -45,9 +45,27 @@ go=go1.26.9
 | 第二轮：仅含缺陷时仍然通过的运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38996089401> |
 | 第二轮：补测试后失败的运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38996208812> |
 | 第二轮：撤销缺陷后通过的运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38996316866> |
-| 未合入分支上的 tag 被 release gate 拒绝的运行 | <链接> |
-| Release v1.0.0 | <链接> |
+| 未合入分支上的 tag 被 release gate 拒绝的运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/39099258350> |
+| Release v1.0.0 | <https://github.com/steinerkuri/ops-lab1-3/releases/tag/v1.0.0> |
 | Release v1.0.1 | <链接> |
+
+### 任务 5：发布与门禁验证
+
+正常发布：`v1.0.0` 触发的 [release #1](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39099035350) 成功。下载 Release 中的 `enroll-conflict_1.0.0_linux_amd64.tar.gz` 和同名 `.sha256` 附件，在附件目录执行校验，结果如下；发布时的原始哈希同时记录在第 4 节。
+
+```text
+enroll-conflict_1.0.0_linux_amd64.tar.gz: OK
+660288abe22e794edfe4a6f24c171cd9bfdfa94c3e2943f7cb6f6bd7e2807765  enroll-conflict_1.0.0_linux_amd64.tar.gz
+```
+
+反向测试：在 `scratch/gate-test` 分支创建未合入 main 的空提交，推送该分支及 `v0.0.1` Tag。[release #2](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39099258350) 在 Release gate 失败，退出码为 `1`；Go 安装、质量检查、打包和创建 Release 步骤全部跳过，本次运行未执行发布。Gate 日志：
+
+```text
+Error: Release rejected: tag v0.0.1 points to 02d4ad4f6a66b8ba532a31192e745569a0710801, which is not an ancestor of origin/main.
+Error: Process completed with exit code 1.
+```
+
+测试后已删除远程和本地的 `v0.0.1` Tag、`scratch/gate-test` 分支，保留正式版本 `v1.0.0` 及上述 Actions 运行记录。
 
 ### 直接推送被拒的终端输出
 
@@ -75,21 +93,40 @@ error: failed to push some refs to 'https://github.com/steinerkuri/ops-lab1-3.gi
 
 | 项 | v1.0.0 | v1.0.1 |
 |---|---|---|
-| 版本号 | <填写> | <填写> |
-| 构建号 | <填写> | <填写> |
-| 提交号（SHA） | <填写> | <填写> |
-| 引入该提交的 PR | <编号与链接> | <编号与链接> |
-| 构建它的 Actions 运行（`trace.sh` 给出的链接） | <链接> | <链接> |
-| 制品 sha256（发布当时，取自 Release 里的 .sha256） | <填写> | <填写> |
+| 版本号 | 1.0.0 | <填写> |
+| 构建号 | 1 | <填写> |
+| 提交号（SHA） | `03bf499674114709e5a6ccba93cabdb3506bc9e8` | <填写> |
+| 引入该提交的 PR | [#4](https://github.com/steinerkuri/ops-lab1-3/pull/4) | <编号与链接> |
+| 构建它的 Actions 运行（`trace.sh` 给出的链接） | [release #1（39099035350）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39099035350) | <链接> |
+| 制品 sha256（发布当时，取自 Release 里的 .sha256） | `660288abe22e794edfe4a6f24c171cd9bfdfa94c3e2943f7cb6f6bd7e2807765` | <填写> |
 
-仅凭构建号能否唯一确定是哪次运行？v1.0.0 的构建号在 `ci` 和 `release` 的运行列表中各对应哪次运行？<填写>
+仅凭构建号能否唯一确定是哪次运行？v1.0.0 的构建号在 `ci` 和 `release` 的运行列表中各对应哪次运行？
+
+不能。构建号在每个工作流内独立计数；v1.0.0 的构建号为 `1`，在 `ci` 中对应 [ci #1（38708020682）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38708020682)，在 `release` 中对应 [release #1（39099035350）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39099035350)。本次发布制品的 `BUILD_INFO` 记录了 `run_id=39099035350`，因此可以定位到实际构建它的 release 运行，不能将 ci #1 当作该发布制品的来源。
 
 发布 v1.0.1 之后重新下载 v1.0.0 的附件，计算得到的 sha256：<填写>。与上表中发布当时的值是否一致？<填写>
 
 `trace.sh` 输出（v1.0.0）：
 
 ```text
-<粘贴>
+== 1. 校验和
+enroll-conflict_1.0.0_linux_amd64.tar.gz: OK
+== 2. 制品里的 BUILD_INFO
+name=enroll-conflict
+version=1.0.0
+build_no=1
+run_id=39099035350
+commit=03bf499674114709e5a6ccba93cabdb3506bc9e8
+go=go1.26.9
+== 3. 提交 03bf499674114709e5a6ccba93cabdb3506bc9e8
+作者: Jikuan Zhang <zhangjikuan77@163.com>
+时间: 2026-10-18T11:06:38+08:00
+标题: task5 (#4)
+主干: 该提交在 origin/main 的历史上
+指向它的 tag: v1.0.0
+版本号: 1.0.0    构建号: 1
+提交页面（含关联的 PR）: https://github.com/steinerkuri/ops-lab1-3/commit/03bf499674114709e5a6ccba93cabdb3506bc9e8
+构建它的运行: https://github.com/steinerkuri/ops-lab1-3/actions/runs/39099035350
 ```
 
 `trace.sh` 输出（v1.0.1）：
