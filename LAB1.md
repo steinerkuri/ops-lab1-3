@@ -47,7 +47,7 @@ go=go1.26.9
 | 第二轮：撤销缺陷后通过的运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38996316866> |
 | 未合入分支上的 tag 被 release gate 拒绝的运行 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/39099258350> |
 | Release v1.0.0 | <https://github.com/steinerkuri/ops-lab1-3/releases/tag/v1.0.0> |
-| Release v1.0.1 | <链接> |
+| Release v1.0.1 | <https://github.com/steinerkuri/ops-lab1-3/releases/tag/v1.0.1> |
 
 ### 任务 5：发布与门禁验证
 
@@ -93,18 +93,18 @@ error: failed to push some refs to 'https://github.com/steinerkuri/ops-lab1-3.gi
 
 | 项 | v1.0.0 | v1.0.1 |
 |---|---|---|
-| 版本号 | 1.0.0 | <填写> |
-| 构建号 | 1 | <填写> |
-| 提交号（SHA） | `03bf499674114709e5a6ccba93cabdb3506bc9e8` | <填写> |
-| 引入该提交的 PR | [#4](https://github.com/steinerkuri/ops-lab1-3/pull/4) | <编号与链接> |
-| 构建它的 Actions 运行（`trace.sh` 给出的链接） | [release #1（39099035350）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39099035350) | <链接> |
-| 制品 sha256（发布当时，取自 Release 里的 .sha256） | `660288abe22e794edfe4a6f24c171cd9bfdfa94c3e2943f7cb6f6bd7e2807765` | <填写> |
+| 版本号 | 1.0.0 | 1.0.1 |
+| 构建号 | 1 | 3 |
+| 提交号（SHA） | `03bf499674114709e5a6ccba93cabdb3506bc9e8` | `b432503aa2c5f32582e89e4a8e647c17a13c7211` |
+| 引入该提交的 PR | [#4](https://github.com/steinerkuri/ops-lab1-3/pull/4) | [#6](https://github.com/steinerkuri/ops-lab1-3/pull/6) |
+| 构建它的 Actions 运行（`trace.sh` 给出的链接） | [release #1（39099035350）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39099035350) | [release #3（39233851037）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39233851037) |
+| 制品 sha256（发布当时，取自 Release 里的 .sha256） | `660288abe22e794edfe4a6f24c171cd9bfdfa94c3e2943f7cb6f6bd7e2807765` | `b615394a5b8f809cfa7caf7bfb5ef9f69692131393d785cf06dd07a1d3c6c4da` |
 
 仅凭构建号能否唯一确定是哪次运行？v1.0.0 的构建号在 `ci` 和 `release` 的运行列表中各对应哪次运行？
 
-不能。构建号在每个工作流内独立计数；v1.0.0 的构建号为 `1`，在 `ci` 中对应 [ci #1（38708020682）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38708020682)，在 `release` 中对应 [release #1（39099035350）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39099035350)。本次发布制品的 `BUILD_INFO` 记录了 `run_id=39099035350`，因此可以定位到实际构建它的 release 运行，不能将 ci #1 当作该发布制品的来源。
+不能。构建号在每个工作流内独立计数，`ci` 和 `release` 都会出现同一个号。v1.0.0 的构建号为 `1`：在 `ci` 中对应 [ci #1（38708020682）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38708020682)，在 `release` 中对应 [release #1（39099035350）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39099035350)；该制品的 `BUILD_INFO` 记录了 `run_id=39099035350`，因此实际构建它的是 release #1，不是 ci #1。v1.0.1 同理，构建号为 `3`：`ci` 中的 3 号运行是 [ci #3（38840413626）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38840413626)，`release` 中的 3 号运行是 [release #3（39233851037）](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39233851037)，其 `run_id=39233851037` 指向 release #3。仅凭构建号不能唯一定位运行，只有 `run_id` 全局唯一。
 
-发布 v1.0.1 之后重新下载 v1.0.0 的附件，计算得到的 sha256：<填写>。与上表中发布当时的值是否一致？<填写>
+发布 v1.0.1 之后重新下载 v1.0.0 的附件，计算得到的 sha256：`660288abe22e794edfe4a6f24c171cd9bfdfa94c3e2943f7cb6f6bd7e2807765`。与上表中发布当时的值一致，说明 v1.0.1 的发布没有覆盖 v1.0.0 的附件。
 
 `trace.sh` 输出（v1.0.0）：
 
@@ -132,14 +132,31 @@ go=go1.26.9
 `trace.sh` 输出（v1.0.1）：
 
 ```text
-<粘贴>
+== 1. 校验和
+enroll-conflict_1.0.1_linux_amd64.tar.gz: OK
+== 2. 制品里的 BUILD_INFO
+name=enroll-conflict
+version=1.0.1
+build_no=3
+run_id=39233851037
+commit=b432503aa2c5f32582e89e4a8e647c17a13c7211
+go=go1.26.9
+== 3. 提交 b432503aa2c5f32582e89e4a8e647c17a13c7211
+作者: ruiyang sun <2391401143@qq.com>
+时间: 2026-10-19T09:41:31+08:00
+标题: docs: 记录 ci 与 release 工作流及发布方式 (#6)
+主干: 该提交在 origin/main 的历史上
+指向它的 tag: v1.0.1
+版本号: 1.0.1    构建号: 3
+提交页面（含关联的 PR）: https://github.com/steinerkuri/ops-lab1-3/commit/b432503aa2c5f32582e89e4a8e647c17a13c7211
+构建它的运行: https://github.com/steinerkuri/ops-lab1-3/actions/runs/39233851037
 ```
 
 任务 6 第 4 步，两次 `/version` 的输出：
 
 ```text
-<运行 v1.0.1 时>
-<换回 v1.0.0 后>
+{"version":"1.0.1","commit":"b432503aa2c5f32582e89e4a8e647c17a13c7211","build_no":"3","go":"go1.26.9"}
+{"version":"1.0.0","commit":"03bf499674114709e5a6ccba93cabdb3506bc9e8","build_no":"1","go":"go1.26.9"}
 ```
 
 ## 5. 数据
@@ -216,4 +233,8 @@ go=go1.26.9
 
 | GitHub 用户名 | 发起并合入的 PR 编号 | 审批过的 PR 编号 |
 |---|---|---|
-| <用户名> | <编号> | <编号> |
+| steinerkuri | #1 | #6 |
+| 6waterMMM | #2 | #1 |
+| scarlet-mei | #3 | #2 |
+| jikuanZhang | #4、#5 | #3 |
+| grave-kakaka | #6 | #4、#5 |
