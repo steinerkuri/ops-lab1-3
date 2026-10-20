@@ -163,30 +163,37 @@ go=go1.26.9
 
 时间均从 GitHub 页面读取，并注明时区。
 
+以下时间均从 GitHub 页面读取，为北京时间（UTC+8）。
+
 第一轮 gate 演练的时间线：
 
 | 事件 | 时间 | 链接 |
 |---|---|---|
 | 发起 PR | 2026-10-16 11:57:19 | <https://github.com/steinerkuri/ops-lab1-3/pull/2> |
 | 第一次 `ci` 失败（运行结束） | 2026-10-16 11:57:38 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38848100553> |
-| 推送修复提交 | <2026-10-16 12:32:01> | <https://github.com/steinerkuri/ops-lab1-3/commit/c946bbd4577ca762bf82e778c5d9af304be21885> |
-| `ci` 通过（运行结束） | <2026-10-16 12:32:48> | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38851149470> |
-| 合入 main | <填写> | <链接> |
+| 推送修复提交 | 2026-10-16 12:32:01 | <https://github.com/steinerkuri/ops-lab1-3/commit/c946bbd4577ca762bf82e778c5d9af304be21885> |
+| `ci` 通过（运行结束） | 2026-10-16 12:32:48 | <https://github.com/steinerkuri/ops-lab1-3/actions/runs/38851149470> |
+| 合入 main | 2026-10-16 23:51:37 | <https://github.com/steinerkuri/ops-lab1-3/pull/2> |
 
 提交到发布的间隔，至少记录三个合入的 PR：
 
 | PR | 第一个提交的时间 | 合入时间 | 对应 Release 的发布时间 | 提交到发布的间隔 |
 |---|---|---|---|---|
-| #<编号> | <填写> | <填写> | <填写> | <填写> |
-| #<编号> | <填写> | <填写> | <填写> | <填写> |
-| #<编号> | <填写> | <填写> | <填写> | <填写> |
+| [#2](https://github.com/steinerkuri/ops-lab1-3/pull/2) | 2026-10-16 11:30 | 2026-10-16 23:51 | [2026-10-18 13:00](https://github.com/steinerkuri/ops-lab1-3/releases/tag/v1.0.0) | 2天1小时30分 |
+| [#4](https://github.com/steinerkuri/ops-lab1-3/pull/4) | 2026-10-17 20:41 | 2026-10-18 11:06 | [2026-10-18 13:00](https://github.com/steinerkuri/ops-lab1-3/releases/tag/v1.0.0) | 16小时19分 |
+| [#6](https://github.com/steinerkuri/ops-lab1-3/pull/6) | 2026-10-19 01:10 | 2026-10-19 09:41 | [2026-10-19 17:57](https://github.com/steinerkuri/ops-lab1-3/releases/tag/v1.0.1) | 16小时47分 |
 
 `ci` 工作流的运行时长（从 Actions 页面读取），至少 5 次，全部列出，不要只给出平均值：
 
 | 运行 | 事件（PR / push） | 时长 | 备注 |
 |---|---|---|---|
-| [ci #1](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38708020682) | push | 39 秒 | `run_id=38708020682`，首次主干 CI，成功生成 artifact |
-| #<编号> | <填写> | <填写> | <填写> |
+| [ci #1](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38708020682) | push | 44 秒 | 首次主干 CI，成功生成 artifact |
+| [ci #4](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38848100553) | PR | 16秒 | 第一轮：初始提交，测试失败 |
+| [ci #5](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38851149470) | PR | 20秒 | 第一轮：修复后测试通过 |
+| [ci #7](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38927338456) | push | 31秒 | 第一轮：合入 main 后构建并生成 artifact |
+| [ci #8](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38996089401) | PR | 16秒 | 第二轮：仅加入缺陷，现有测试仍通过 |
+| [ci #9](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38996208812) | PR | 16秒 | 第二轮：补充测试后失败 |
+| [ci #10](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38996316866) | PR | 19秒 | 第二轮：撤销缺陷后通过 |
 
 ## 6. 分析问题
 
