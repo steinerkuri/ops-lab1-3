@@ -58,3 +58,122 @@ jobs:
             dist/*.tar.gz dist/*.tar.gz.sha256 \
             --verify-tag \
             --notes "Release $GITHUB_REF_NAME"
+
+  image:
+    # GITHUB_TOKEN 创建 Release 不会触发另一个 release 事件工作流。
+    # 等待附件发布完成，再直接复用附件中的二进制构建镜像。
+    needs: release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download and verify Release assets
+        id: assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE="enroll-conflict_${VERSION}_linux_amd64"
+          mkdir -p dist/release
+          gh release download "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "${PACKAGE}.tar.gz" \
+            --pattern "${PACKAGE}.tar.gz.sha256" \
+            --dir dist/release
+          (cd dist/release && sha256sum -c "${PACKAGE}.tar.gz.sha256")
+          tar -xzf "dist/release/${PACKAGE}.tar.gz" -C dist/release
+          grep -Fx "version=$VERSION" "dist/release/${PACKAGE}/BUILD_INFO"
+          grep -Fx "commit=$GITHUB_SHA" "dist/release/${PACKAGE}/BUILD_INFO"
+          sha256sum "dist/release/${PACKAGE}/enroll-conflict"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "context=dist/release/$PACKAGE" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Release image
+        id: image
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ steps.assets.outputs.context }}
+          file: Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.assets.outputs.image }}:${{ github.ref_name }}
+          build-args: |
+            VERSION=${{ steps.assets.outputs.version }}
+            COMMIT=${{ github.sha }}
+            SOURCE=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Verify image by digest
+        shell: bash
+        env:
+          IMAGE: ${{ steps.assets.outputs.image }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+          PACKAGE_DIR: ${{ steps.assets.outputs.context }}
+          VERSION: ${{ steps.assets.outputs.version }}
+          BUILD_NO: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          IMAGE_REF="${IMAGE}@${DIGEST}"
+          CONTAINER="o1-check-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          printf 'Runtime host: GitHub Actions ubuntu-24.04; architecture: %s\n' "$(uname -m)"
+          printf 'Running image by digest: %s\n' "$IMAGE_REF"
+          docker pull --platform linux/amd64 "$IMAGE_REF"
+          trap 'docker rm -f "$CONTAINER" >/dev/null 2>&1 || true' EXIT
+          docker run --detach --name "$CONTAINER" \
+            --platform linux/amd64 -p 127.0.0.1:18080:8080 "$IMAGE_REF"
+          docker cp "$CONTAINER:/enroll-conflict" "$RUNNER_TEMP/enroll-conflict-image"
+          cmp "$PACKAGE_DIR/enroll-conflict" "$RUNNER_TEMP/enroll-conflict-image"
+          docker cp "$CONTAINER:/BUILD_INFO" "$RUNNER_TEMP/image-BUILD_INFO"
+          cmp "$PACKAGE_DIR/BUILD_INFO" "$RUNNER_TEMP/image-BUILD_INFO"
+          curl --fail --silent --show-error --retry 10 --retry-connrefused \
+            --retry-delay 1 --max-time 10 http://127.0.0.1:18080/version \
+            > "$RUNNER_TEMP/image-version.json"
+          cat "$RUNNER_TEMP/image-version.json"
+          jq -e --arg version "$VERSION" --arg commit "$GITHUB_SHA" \
+            --arg build_no "$BUILD_NO" \
+            '.version == $version and .commit == $commit and .build_no == $build_no' \
+            "$RUNNER_TEMP/image-version.json"
+          {
+            echo '## O1 container image'
+            printf '\nImage: `%s`\n' "$IMAGE"
+            printf '\nDigest: `%s`\n' "$DIGEST"
+            printf '\nPlatform: `linux/amd64`; verification host: `%s`\n' "$(uname -m)"
+            printf '\nRelease binary and BUILD_INFO match the image byte for byte.\n'
+            printf '\nRun by digest:\n```sh\ndocker run --rm -p 127.0.0.1:18080:8080 %s\n```\n' "$IMAGE_REF"
+            printf '\n/version:\n```json\n'
+            cat "$RUNNER_TEMP/image-version.json"
+            printf '\n```\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check anonymous pull by digest
+        shell: bash
+        env:
+          IMAGE: ${{ steps.assets.outputs.image }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          set -euo pipefail
+          # 独立的空配置避免使用前面登录 GHCR 时保存的凭据。
+          ANON_CONFIG="$(mktemp -d)"
+          trap 'rm -rf "$ANON_CONFIG"' EXIT
+          if docker --config "$ANON_CONFIG" pull --platform linux/amd64 "${IMAGE}@${DIGEST}"; then
+            echo 'Anonymous pull: succeeded (no registry credentials).'
+            printf '\nAnonymous pull by digest: **succeeded**, using an empty Docker config.\n' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '::warning::Anonymous pull failed. Check package visibility and registry/network errors in this log.'
+            printf '\nAnonymous pull by digest: **failed**. Check the step log and package visibility before claiming public access.\n' >> "$GITHUB_STEP_SUMMARY"
+          fi
