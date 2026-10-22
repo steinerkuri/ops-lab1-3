@@ -253,33 +253,33 @@ go=go1.26.9
 
 | 选做 | 完成情况与证据 |
 |---|---|
-| O1 容器镜像 | 已完成。[实现 PR #9](https://github.com/steinerkuri/ops-lab1-3/pull/9)、[Release v1.0.2](https://github.com/steinerkuri/ops-lab1-3/releases/tag/v1.0.2)、[release #4](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39749956054)、[image job 日志](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39749956054/job/119727947779)。已按 digest 在 x86_64 主机运行，并验证可匿名拉取，具体记录见下文。 |
+| O1 容器镜像 | [image job 日志链接](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39749956054/job/119727947779)；[镜像摘要](sha256:60ab86e8cedb12c019c49d629c143495660ae98de32bc37ecf7055f7351379e5) x86_64 主机运行，具体记录见下面O1说明。 |
 | O2 缓存对反馈时间的影响 | 见下面O2说明 |
 | O3 迁移到小组项目 | 未做 |
 
-O1 实现说明：`image` job 通过 `needs: release` 等待发布完成，下载该版本的压缩包和 `.sha256`，校验附件及 BUILD_INFO 中的版本、提交号，再使用仓库已有的 Dockerfile 构建镜像，镜像内不重新编译。镜像地址使用小写仓库路径 `ghcr.io/steinerkuri/ops-lab1-3`。推送后按 digest 启动容器，检查 `/version`，并逐字节比较容器内的程序、BUILD_INFO 与 Release 附件是否一致；digest 和运行结果写入该次 Actions 的 Summary。
+O1说明：
+- `image` job 通过 `needs: release` 等待发布完成，下载该版本的压缩包和 `.sha256`，校验附件及 BUILD_INFO 中的版本、提交号，再使用仓库已有的 Dockerfile 构建镜像，镜像内不重新编译。镜像地址使用小写仓库路径 `ghcr.io/steinerkuri/ops-lab1-3`。镜像推送到远端后，按 digest 启动容器，检查 `/version`，并逐字节比较容器内的程序、BUILD_INFO 与 Release 附件是否一致；digest 和运行结果写入该次 Actions 的 Summary。容器运行主机使用 GitHub Actions 的 `ubuntu-24.04` runner，并通过 `uname -m` 记录实际架构。无需在 ECS 安装 Docker（因为sudo命令需要密码，故没有用服务器）。
 
-容器运行主机使用 GitHub Actions 的 `ubuntu-24.04` runner，并通过 `uname -m` 记录实际架构。该方式无需在 ECS 安装 Docker，也无需在 ARM Mac 上模拟运行。
+- 镜像 job 放在同一个工作流中，是因为本实验使用 `GITHUB_TOKEN` 创建 Release，该操作产生的 `release` 事件不会触发另一个工作流。
+- GHCR 镜像包默认私有，关联仓库后可继承访问权限，但不会因此自动继承仓库的公开可见性。本次使用无登录状态的空 Docker 配置，按 digest pull镜像成功，说明该镜像支持匿名拉取。
 
-镜像 job 放在同一个工作流中，是因为本实验使用 `GITHUB_TOKEN` 创建 Release，该操作产生的 `release` 事件不会触发另一个工作流。GHCR 镜像关联公开仓库不等于已经确认可匿名拉取；工作流使用独立的空 Docker 配置按 digest 尝试匿名拉取，并在日志和 Summary 中如实记录成功或失败，失败时还需结合包的实际可见性和日志排查。
-
-O1 实测记录（2026-10-22，北京时间 UTC+8）：
+- 实测记录（2026-10-22，北京时间 UTC+8）：
 
 | 项目 | 实际结果 |
 |---|---|
 | 发布版本及时间 | `v1.0.2`，2026-10-22 16:44:32 |
 | tag 对应的 main 提交 | [`a52d6326c167f6955eb48bd12c46610340f9e794`](https://github.com/steinerkuri/ops-lab1-3/commit/a52d6326c167f6955eb48bd12c46610340f9e794) |
-| 构建运行 | `release #4`，`run_id=39749956054`；`release` 和 `image` 两个 job 均成功 |
+| 构建运行 | `release #4`，actions分配的`run_id=39749956054`；`release` 和 `image` 两个 job 均成功 |
 | 使用的 Release 附件 | `enroll-conflict_1.0.2_linux_amd64.tar.gz` 及其 `.sha256`；校验结果 `OK` |
 | 附件 sha256 | `01f18f381c6c8626052f61b452a4e201863ac3406bd1ac1de720eeaee45459b0` |
 | 镜像名称及 tag | `ghcr.io/steinerkuri/ops-lab1-3:v1.0.2` |
-| 推送并用于运行的镜像 digest | `sha256:60ab86e8cedb12c019c49d629c143495660ae98de32bc37ecf7055f7351379e5` |
+| 镜像 digest | `sha256:60ab86e8cedb12c019c49d629c143495660ae98de32bc37ecf7055f7351379e5` |
 | 镜像平台 | `linux/amd64` |
-| 运行主机 | GitHub Actions `ubuntu-24.04` runner，`uname -m` 输出 `x86_64` |
-| 容器内容校验 | 程序和 `BUILD_INFO` 均通过 `cmp`，与 Release 附件中的对应文件逐字节一致 |
-| 匿名拉取 | 使用独立的空 Docker 配置执行按 digest 的 `docker pull`，日志输出 `Anonymous pull: succeeded (no registry credentials).` |
+| 运行主机 | GitHub Actions `ubuntu-24.04` runner，执行 `uname -m` 输出 `x86_64` |
+| 容器内容校验 | 程序和 `BUILD_INFO` 均通过命令 `cmp`，与 Release 附件中对应文件一致 |
+| 匿名拉取 | 日志输出 `Anonymous pull: succeeded (no registry credentials).`，成功 |
 
-`Verify image by digest` 步骤记录的实际运行目标及 `/version` 输出：
+Actions日志：
 
 ```text
 Runtime host: GitHub Actions ubuntu-24.04; architecture: x86_64
@@ -287,14 +287,14 @@ Running image by digest: ghcr.io/steinerkuri/ops-lab1-3@sha256:60ab86e8cedb12c01
 {"version":"1.0.2","commit":"a52d6326c167f6955eb48bd12c46610340f9e794","build_no":"4","go":"go1.26.9"}
 ```
 
-可复现的按 digest 运行命令（需要支持该镜像平台的 Docker 环境）：
+可复现的运行命令（按照 digest运行， 需要支持该镜像平台的 Docker 环境）
 
 ```sh
 docker run --rm --platform linux/amd64 -p 127.0.0.1:18080:8080 \
   ghcr.io/steinerkuri/ops-lab1-3@sha256:60ab86e8cedb12c019c49d629c143495660ae98de32bc37ecf7055f7351379e5
 ```
 
-在另一个终端执行 `curl http://127.0.0.1:18080/version` 可查看版本。上述证据来自 Actions 的真实容器运行；ECS 无需安装 Docker。
+在另一个终端执行 `curl http://127.0.0.1:18080/version` 就可以查看版本。
 
 O2说明：
 实验 Draft PR（未合并）：<https://github.com/steinerkuri/ops-lab1-3/pull/11>
