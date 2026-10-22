@@ -205,7 +205,26 @@ go=go1.26.9
 
 **问题 2：PR 中的构建与 main 上的构建。** 在 PR 触发的运行日志中，`github.sha` 与 `pull_request.head.sha` 是否相同？它们能否在 main 的历史中找到？答案与合并方式有关，请写明本组使用的方式。合并之后，main 上这次改动的提交号是哪个？据此说明，为什么待发布的制品只能从 main 上的提交或 tag 构建。
 
-<填写>
+所用数据：[PR #2](https://github.com/steinerkuri/ops-lab1-3/pull/2) 合并前后的 CI 日志。
+
+| 运行 | 触发事件 | `github.sha` | `github.event.pull_request.head.sha` |
+|---|---|---|---|
+| ci #6 | `pull_request` | `74011e54bf103d9009f30906e035ae6749073c38` | `270f32dc47f7c36c5d90ab365d5948488f120517` |
+| [ci #7](https://github.com/steinerkuri/ops-lab1-3/actions/runs/38927338456) | `push` 到 main | `46437cdde842d86d530679bb423b2684fe990d03` | 空（本次事件不是 PR） |
+
+`github.sha` 与 `pull_request.head.sha` 不同。
+
+`github.sha`：含义取决于触发事件，比如 ci #6 就是 GitHub 将 PR 分支上最新提交与当前 main 内容预合并后，构建的一个临时测试提交；ci #7 是正式 main 提交。
+
+`pull_request.head.sha`：当前 PR 分支上的最新提交。
+
+该项目中，只有 ci #7 的 `github.sha` 能在 main 的历史中找到。
+
+本组使用的合并方式是 squash and merge，即同意 PR 时，在 main history 中创建一个新提交记入 main history。该新提交包含本次 PR 的最终改动。
+
+待发布制品只能从 main 上的提交/tag 构建，是为了建立一个清楚的对应关系：
+
+发布的压缩包 → 确定的 main 提交及对应的 PR、审批和测试记录。
 
 **问题 3：可重复构建。** 在本地同一个提交上按下表构建，记录哈希值。④、⑤ 需临时去掉 Makefile 中 tar 的 `--mtime=@0`，完成后用 `git checkout -- Makefile` 恢复，不要提交。
 
@@ -230,9 +249,15 @@ go=go1.26.9
 
 | 选做 | 完成情况与证据 |
 |---|---|
-| O1 容器镜像 | <未做 / 链接、镜像摘要（digest）、运行容器的主机架构> |
+| O1 容器镜像 | `release.yml` 已配置 `image` job，复用 Release 附件构建并推送 `linux/amd64` 镜像；正式发布链接、digest、Actions 主机运行及匿名拉取证据待补充。 |
 | O2 缓存对反馈时间的影响 | <未做 / 预期、数据与结论> |
 | O3 迁移到小组项目 | <未做 / 仓库链接> |
+
+O1 实现说明：`image` job 通过 `needs: release` 等待发布完成，下载该版本的压缩包和 `.sha256`，校验附件及 BUILD_INFO 中的版本、提交号，再使用仓库已有的 Dockerfile 构建镜像，镜像内不重新编译。镜像地址使用小写仓库路径 `ghcr.io/steinerkuri/ops-lab1-3`。推送后按 digest 启动容器，检查 `/version`，并逐字节比较容器内的程序、BUILD_INFO 与 Release 附件是否一致；digest 和运行结果写入该次 Actions 的 Summary。
+
+容器运行主机使用 GitHub Actions 的 `ubuntu-24.04` runner，并通过 `uname -m` 记录实际架构。该方式无需在 ECS 安装 Docker，也无需在 ARM Mac 上模拟运行。
+
+镜像 job 放在同一个工作流中，是因为本实验使用 `GITHUB_TOKEN` 创建 Release，该操作产生的 `release` 事件不会触发另一个工作流。GHCR 镜像关联公开仓库不等于已经确认可匿名拉取；工作流使用独立的空 Docker 配置按 digest 尝试匿名拉取，并在日志和 Summary 中如实记录成功或失败，失败时还需结合包的实际可见性和日志排查。
 
 ## 8. 成员贡献
 
