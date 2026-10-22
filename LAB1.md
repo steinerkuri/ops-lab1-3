@@ -254,14 +254,28 @@ go=go1.26.9
 | 选做 | 完成情况与证据 |
 |---|---|
 | O1 容器镜像 | `release.yml` 已配置 `image` job，复用 Release 附件构建并推送 `linux/amd64` 镜像；正式发布链接、digest、Actions 主机运行及匿名拉取证据待补充。 |
-| O2 缓存对反馈时间的影响 | <未做 / 预期、数据与结论> |
-| O3 迁移到小组项目 | <未做 / 仓库链接> |
+| O2 缓存对反馈时间的影响 | 见下面O2说明 |
+| O3 迁移到小组项目 | 未做 |
 
 O1 实现说明：`image` job 通过 `needs: release` 等待发布完成，下载该版本的压缩包和 `.sha256`，校验附件及 BUILD_INFO 中的版本、提交号，再使用仓库已有的 Dockerfile 构建镜像，镜像内不重新编译。镜像地址使用小写仓库路径 `ghcr.io/steinerkuri/ops-lab1-3`。推送后按 digest 启动容器，检查 `/version`，并逐字节比较容器内的程序、BUILD_INFO 与 Release 附件是否一致；digest 和运行结果写入该次 Actions 的 Summary。
 
 容器运行主机使用 GitHub Actions 的 `ubuntu-24.04` runner，并通过 `uname -m` 记录实际架构。该方式无需在 ECS 安装 Docker，也无需在 ARM Mac 上模拟运行。
 
 镜像 job 放在同一个工作流中，是因为本实验使用 `GITHUB_TOKEN` 创建 Release，该操作产生的 `release` 事件不会触发另一个工作流。GHCR 镜像关联公开仓库不等于已经确认可匿名拉取；工作流使用独立的空 Docker 配置按 digest 尝试匿名拉取，并在日志和 Summary 中如实记录成功或失败，失败时还需结合包的实际可见性和日志排查。
+
+O2说明：
+实验 Draft PR（未合并）：<https://github.com/steinerkuri/ops-lab1-3/pull/11>
+
+实验预期：统一示例没有第三方依赖，因此预期 `setup-go` 缓存只能节省少量时间，缓存收益可能被共享 runner 的负载、网络、初始化状态等波动掩盖。实验使用同一个 Draft PR：先显式设置 `cache: true`，初次运行后执行4次 **Re-run all jobs**；再改为 `cache: false`，同样执行初次运行和4次 Re-run。两组均记录完整 workflow 时长，项目代码及其他 CI 步骤保持不变。
+
+| 缓存设置 | Actions 运行 | Attempt 1 | Attempt 2 | Attempt 3 | Attempt 4 | Attempt 5 | 平均值 | 中位数 | 范围 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `cache: true` | [run 39740200681](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39740200681) | 14秒 | 19秒 | 24秒 | 22秒 | 18秒 | 19.4秒 | 19秒 | 14～24秒 |
+| `cache: false` | [run 39741509602](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39741509602) | 32秒 | 36秒 | 37秒 | 37秒 | 29秒 | 34.2秒 | 36秒 | 29～37秒 |
+
+本次实验中，有缓存组平均用时19.4秒，无缓存组平均用时34.2秒；关闭缓存后平均增加14.8秒，约比有缓存组长76.3%，没有支持“缓存只能节省少量时间”的运行前预期。`setup-go` 的缓存不仅涉及模块下载目录，也可能复用 `GOCACHE` 中的 Go 构建输出，因此即使示例没有第三方依赖，`go vet`、`go test` 及相关编译步骤仍可能受益。与此同时，缓存查询、下载、解压和保存本身也存在开销，所以缓存对总时长的影响取决于避免的编译时间能否抵消缓存操作成本。
+
+单次时长会受到共享 runner 的 CPU、磁盘、网络、初始化状态和 GitHub 服务负载影响；缓存是否命中、缓存文件大小及恢复速度也会产生波动。本实验每组只有5次，并且先连续运行有缓存组、再连续运行无缓存组，没有交错或随机化，两个时间段的 runner 负载差异可能成为混杂因素。记录的是完整 workflow 时长，其中还包括 checkout、Actions 初始化等与 Go缓存无关的步骤。因此，本实验只能说明在本次时间段和当前仓库中观察到有缓存组更快，不能断言14.8秒的差异全部由缓存造成，也不能将该结果直接推广到其他项目。
 
 ## 8. 成员贡献
 
