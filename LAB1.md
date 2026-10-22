@@ -343,8 +343,8 @@ O2说明：
 
 | GitHub 用户名 | 发起并合入的 PR 编号 | 审批过的 PR 编号 |
 |---|---|---|
-| steinerkuri | #1 | #6、#9 |
-| 6waterMMM | #2、#9 | #1 |
-| scarlet-mei | #3 | #2 |
-| jikuanZhang | #4、#5 | #3 |
-| grave-kakaka | #6 | #4、#5 |
+| steinerkuri | #1、#12、#16 | #6、#9、#10、#13、#14、#15 |
+| 6waterMMM | #2、#9、#13 | #1、#12 |
+| scarlet-mei | #3、#10 | #2、#16 |
+| jikuanZhang | #4、#5、#14 | #3 |
+| grave-kakaka | #6、#15 | #4、#5 |
