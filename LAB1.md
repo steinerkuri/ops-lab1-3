@@ -232,18 +232,41 @@ go=go1.26.9
 
 **问题 3：可重复构建。** 在本地同一个提交上按下表构建，记录哈希值。④、⑤ 需临时去掉 Makefile 中 tar 的 `--mtime=@0`，完成后用 `git checkout -- Makefile` 恢复，不要提交。
 
+本地实验使用独立工作目录 `/tmp/ops-lab1-question3`，固定提交为 `a52d6326c167f6955eb48bd12c46610340f9e794`，Go 为 `1.26.9`，目标为 `linux/amd64`、`CGO_ENABLED=0`；①开始前工作区干净。①②④⑤的参数均为 `VERSION=1.0.0 BUILD_NO=100 RUN_ID=1000 COMMIT=a52d6326c167f6955eb48bd12c46610340f9e794`，③仅将 `BUILD_NO` 改为 `101`；这些版本号与运行号是本地实验参数，不代表已发布的 v1.0.0 或真实 Actions 运行。④⑤只临时删除 tar 命令的 `--mtime=@0`，实验后已执行 `git checkout -- Makefile` 并确认工作区恢复干净。
+
+Actions 对比选择 main 上的 push 运行 [ci #30](https://github.com/steinerkuri/ops-lab1-3/actions/runs/39747186247)，提交与本地实验相同；查看该运行的 attempt 1 和 attempt 2，证据均来自 `Package main build` 步骤最后两行。两次均成功，构建参数均为 `VERSION=0.0.0-main`、`BUILD_NO=30`、`RUN_ID=39747186247` 和上述 `COMMIT`，第一次总耗时 33 秒，重跑后 26 秒；哈希比较的是这两次 Actions 构建，不与参数不同的本地构建直接比较。
+
 | 构建 | 条件 | 二进制 sha256 | tar.gz sha256 |
 |---|---|---|---|
-| ① | `make package`，`VERSION`、`BUILD_NO`、`RUN_ID`、`COMMIT` 均指定固定值 | <填写> | <填写> |
-| ② | 与 ① 完全相同，再构建一次 | <填写> | <填写> |
-| ③ | 仅将 `BUILD_NO` 换成另一个值 | <填写> | <填写> |
-| ④ | 去掉 `--mtime=@0`，其余同 ① | <填写> | <填写> |
-| ⑤ | 同 ④，间隔几秒后再构建一次 | <填写> | <填写> |
-| Actions | 对 main 上的一次 push 运行执行 Re-run all jobs，比较两次尝试中 package 步骤打印的值 | <两次的值> | <两次的值> |
+| ① | `make package`，`VERSION`、`BUILD_NO`、`RUN_ID`、`COMMIT` 均指定固定值 | `5e974dc5145bc88b8f009d5d7e8e43cdfcc0eb14e6ac61ee3d1f7c533d67300c` | `7d73602dc4cc277c1cfc409283cea2e740e63cec2e45927a1d9bb7510d48fdbe` |
+| ② | 与 ① 完全相同，再构建一次 | `5e974dc5145bc88b8f009d5d7e8e43cdfcc0eb14e6ac61ee3d1f7c533d67300c` | `7d73602dc4cc277c1cfc409283cea2e740e63cec2e45927a1d9bb7510d48fdbe` |
+| ③ | 仅将 `BUILD_NO` 换成另一个值 | `d1627f8b3b63859b2c9d5eb28f7df3b27e590be66602989afa2e3c596902d814` | `8f7c5bdbee6780811c1d92e6d34245204e35951023b8fdce6074e8e10c5efd40` |
+| ④ | 去掉 `--mtime=@0`，其余同 ① | `5e974dc5145bc88b8f009d5d7e8e43cdfcc0eb14e6ac61ee3d1f7c533d67300c` | `6484288b323cd2b997e69a005293d633ff099a34c946a2631a605ed47fac7ec7` |
+| ⑤ | 同 ④，间隔几秒后再构建一次 | `5e974dc5145bc88b8f009d5d7e8e43cdfcc0eb14e6ac61ee3d1f7c533d67300c` | `1c82c011ad87c8eb9df91c716d7716392ed0cd8f101dffec1f972b9d078f8482` |
+| Actions | 对 main 上的一次 push 运行执行 Re-run all jobs，比较两次尝试中 package 步骤打印的值 | attempt 1、2 均为 `f948a814e04f398ae4960f77dcbb331b10d31db777253a8d4625a661a11cfa6e` | attempt 1、2 均为 `bef37139132c83b44c0507734feaca5b32c12c22113ed6e0e9cc6d42551d5541` |
+
+补充证据：①④⑤的 `go version -m` 输出均未出现 `vcs.revision`、`vcs.time` 或 `vcs.modified` 行，其构建设置相同：
+
+```text
+path    enroll-conflict
+mod     enroll-conflict (devel)
+build   -buildmode=exe
+build   -compiler=gc
+build   -trimpath=true
+build   CGO_ENABLED=0
+build   GOARCH=amd64
+build   GOOS=linux
+build   GOAMD64=v1
+```
+
+`tar --full-time -tvzf` 的输出显示，④中 `BUILD_INFO` 和二进制文件的归档修改时间均为 `2026-10-22 17:42:03`，⑤中均为 `2026-10-22 17:42:13`；以上为终端原样输出，两次相差 10 秒。
 
 哪些相同、哪些不同，原因分别是什么？④ 的二进制文件与 ① 是否相同？如果不同，请结合任务 0 中看到的 vcs 信息分析。据此说明制品中应当包含什么、不应包含什么。另外，`release` 在同一个提交上再次编译，而没有直接发布 `ci` 产出的主干制品：为什么这样做？这与 L-05 第 11 页的“一次构建、多处部署”是否冲突，代价是什么？
 
-<填写>
+①与②的二进制和压缩包哈希均相同，说明在本次固定源码、工具链、构建参数及环境的条件下，重复构建得到了相同制品；③仅改变构建号，但它同时通过链接参数写入二进制并写入 `BUILD_INFO`，所以两个哈希都改变了。④⑤的二进制与①相同，但去掉 `--mtime=@0` 后，归档保存了实际文件修改时间，④⑤之间文件时间又发生变化，因此④⑤的压缩包既不同于①，也彼此不同，即使保留 `gzip -n` 也不能消除 tar 内部的时间差异。本次①④⑤均未显示 Go 的 `vcs.*` 信息，不能把差异归因于 `vcs.modified`，而任务 0 已观察到包含 VCS 信息的构建会记录工作区修改状态，所以其他环境中④的二进制仍可能因该状态变化而不同。Actions 的两次尝试保持构建号 `30`、运行 ID 和提交不变，两个哈希也分别相同，说明这次重跑可复现，但不能据此保证更换工具链、依赖、文件权限或构建环境后仍然相同。制品应包含版本号、完整提交号、构建号、运行 ID 和工具链版本等可核对的追溯信息，并保留准确的工作区状态信息；不应为了追求相同哈希而隐藏脏工作区，也不应混入每次变化的当前构建时间、机器专属绝对路径等无关信息，归档顺序、属主和时间则应统一。`release` 重新编译是因为 main CI 的版本号是 `0.0.0-main`，正式版本需从 Tag 得到并通过链接参数写入二进制，同时还要写入 release 自己的构建号和运行 ID，直接发布 CI 压缩包或只改文件名不能完成这些替换。这在 CI 制品到 Release 制品之间偏离了“一次构建、多处部署”，代价是重复测试与编译耗时，以及重新构建时环境变化的风险，因此 release 必须重新进行质量检查，不能把 CI 制品的验证直接当作发布制品的全部验证。正式 Release 生成以后，各次部署和回退应下载并校验同一份附件，不再编译，这样部署阶段仍遵守“一次构建、多处部署”。
+
+运行编号说明依据：[GitHub Actions 变量文档](https://docs.github.com/en/actions/reference/workflows-and-actions/variables)规定，重跑保留 `GITHUB_RUN_NUMBER` 和 `GITHUB_RUN_ID`，递增 `GITHUB_RUN_ATTEMPT`；本工作流没有把 attempt 写入制品。
+
 
 **问题 4：发布与回退。** 假设 v1.0.1 发布后发现缺陷，应当如何处理？为什么不应删除 v1.0.1 的 tag、再用同一版本号重新发布？任务 6 中将服务从 v1.0.1 切换回 v1.0.0 时，使用的是哪个文件，是否需要重新构建？请用两次 `/version` 的输出说明。如果改为从源码重新构建 v1.0.0，得到的文件与原附件是否相同（参考问题 3）？最后，如果有人删除 v1.0.0 的附件，换上一个新文件和对应的新 `.sha256`，`trace.sh` 能否发现？本组在第 4 节记录的值能否发现？可以查阅 GitHub 的 Immutable releases 设置的用途。
 
